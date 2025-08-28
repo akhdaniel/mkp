@@ -301,9 +301,147 @@ function getSuggestions(userId) {
   return scoredPackages.slice(0, 8);
 }
 
+// Admin statistics function
+function getAdminStats() {
+  const totalPackages = travelPackages.length;
+  const totalUsers = Object.keys(userPurchases).length + 3; // Mock additional users
+  const totalBookings = Object.values(userPurchases).reduce((sum, purchases) => sum + purchases.length, 0);
+  
+  // Revenue calculation
+  const revenue = Object.values(userPurchases).reduce((sum, purchases) => {
+    return sum + purchases.reduce((purchaseSum, purchase) => {
+      const pkg = travelPackages.find(p => p.id === purchase.packageId);
+      return purchaseSum + (pkg ? pkg.price : 0);
+    }, 0);
+  }, 0);
+  
+  // Popular destinations
+  const destinationBookings = {};
+  Object.values(userPurchases).forEach(purchases => {
+    purchases.forEach(purchase => {
+      const pkg = travelPackages.find(p => p.id === purchase.packageId);
+      if (pkg) {
+        destinationBookings[pkg.country] = (destinationBookings[pkg.country] || 0) + 1;
+      }
+    });
+  });
+  
+  // Package performance
+  const packageBookings = {};
+  Object.values(userPurchases).forEach(purchases => {
+    purchases.forEach(purchase => {
+      packageBookings[purchase.packageId] = (packageBookings[purchase.packageId] || 0) + 1;
+    });
+  });
+  
+  const topPackages = Object.entries(packageBookings)
+    .map(([id, bookings]) => {
+      const pkg = travelPackages.find(p => p.id === parseInt(id));
+      return pkg ? { ...pkg, bookings } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.bookings - a.bookings)
+    .slice(0, 5);
+  
+  // Monthly trend (mock data)
+  const monthlyRevenue = [
+    { month: 'Jan', revenue: 12500, bookings: 8 },
+    { month: 'Feb', revenue: 18300, bookings: 12 },
+    { month: 'Mar', revenue: 22100, bookings: 15 },
+    { month: 'Apr', revenue: 19800, bookings: 13 },
+    { month: 'May', revenue: 25600, bookings: 17 },
+    { month: 'Jun', revenue: 28900, bookings: 19 },
+  ];
+  
+  return {
+    overview: {
+      totalPackages,
+      totalUsers,
+      totalBookings,
+      revenue,
+      avgBookingValue: totalBookings > 0 ? Math.round(revenue / totalBookings) : 0
+    },
+    destinationBookings,
+    topPackages,
+    monthlyRevenue,
+    packagesByType: travelPackages.reduce((acc, pkg) => {
+      acc[pkg.type] = (acc[pkg.type] || 0) + 1;
+      return acc;
+    }, {}),
+    recentBookings: Object.entries(userPurchases).flatMap(([userId, purchases]) =>
+      purchases.map(purchase => ({
+        ...purchase,
+        userId,
+        packageDetails: travelPackages.find(p => p.id === purchase.packageId)
+      }))
+    ).sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()).slice(0, 5)
+  };
+}
+
+// Get all users (mock function)
+function getAllUsers() {
+  const users = [
+    {
+      id: 'user123',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      joinDate: '2024-01-01',
+      totalBookings: userPurchases['user123']?.length || 0,
+      totalSpent: userPurchases['user123']?.reduce((sum, p) => {
+        const pkg = travelPackages.find(pack => pack.id === p.packageId);
+        return sum + (pkg?.price || 0);
+      }, 0) || 0,
+      status: 'active'
+    },
+    {
+      id: 'user456',
+      name: 'Jane Smith',
+      email: 'jane.smith@example.com',
+      joinDate: '2024-02-15',
+      totalBookings: userPurchases['user456']?.length || 0,
+      totalSpent: userPurchases['user456']?.reduce((sum, p) => {
+        const pkg = travelPackages.find(pack => pack.id === p.packageId);
+        return sum + (pkg?.price || 0);
+      }, 0) || 0,
+      status: 'active'
+    },
+    {
+      id: 'user789',
+      name: 'Mike Johnson',
+      email: 'mike.j@example.com',
+      joinDate: '2024-03-10',
+      totalBookings: 0,
+      totalSpent: 0,
+      status: 'active'
+    },
+    {
+      id: 'user101',
+      name: 'Sarah Williams',
+      email: 'sarah.w@example.com',
+      joinDate: '2024-03-20',
+      totalBookings: 0,
+      totalSpent: 0,
+      status: 'inactive'
+    },
+    {
+      id: 'user102',
+      name: 'David Brown',
+      email: 'david.b@example.com',
+      joinDate: '2024-04-05',
+      totalBookings: 0,
+      totalSpent: 0,
+      status: 'active'
+    }
+  ];
+  
+  return users;
+}
+
 module.exports = {
   travelPackages,
   destinations,
   getUserPurchases,
-  getSuggestions
+  getSuggestions,
+  getAdminStats,
+  getAllUsers
 };

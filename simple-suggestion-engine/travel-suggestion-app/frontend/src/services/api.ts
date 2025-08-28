@@ -52,4 +52,31 @@ export const travelAPI = {
   },
 };
 
+export const adminAPI = {
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
+  getUsers: async (): Promise<any[]> => {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+
+  createPackage: async (packageData: any): Promise<any> => {
+    const response = await api.post('/admin/packages', packageData);
+    return response.data;
+  },
+
+  updatePackage: async (id: number, packageData: any): Promise<any> => {
+    const response = await api.put(`/admin/packages/${id}`, packageData);
+    return response.data;
+  },
+
+  deletePackage: async (id: number): Promise<any> => {
+    const response = await api.delete(`/admin/packages/${id}`);
+    return response.data;
+  },
+};
+
 export default api;

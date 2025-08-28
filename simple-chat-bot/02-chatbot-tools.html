@@ -48,9 +48,8 @@
     </div>
 
     <script>
-        // API Configuration
-        const DEEPSEEK_API_KEY = 'sk-d3dc3639f6e44a2ca91cd1e93427583e';
-        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+        // API Configuration - Using backend proxy
+        const DEEPSEEK_API_URL = '/api/deepseek';
         
         // OpenWeatherMap API (Free tier)
         const WEATHER_API_KEY = 'a6b54487d722375e74ecadc169a3257c'; // Ganti dengan API key Anda dari openweathermap.org
@@ -565,8 +564,7 @@ products
                 const response = await fetch(DEEPSEEK_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: 'deepseek-chat',
@@ -616,8 +614,7 @@ products
                     const finalResponse = await fetch(DEEPSEEK_API_URL, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             model: 'deepseek-chat',

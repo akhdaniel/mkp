@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { travelPackages, destinations, getUserPurchases, getSuggestions } = require('./data/mockData');
+const { travelPackages, destinations, getUserPurchases, getSuggestions, getAdminStats, getAllUsers } = require('./data/mockData');
 
 const app = express();
 const PORT = 5000;
@@ -78,6 +78,30 @@ app.post('/api/user/:userId/purchase', (req, res) => {
   const { packageId } = req.body;
   // In a real app, this would update a database
   res.json({ success: true, message: 'Purchase recorded', packageId });
+});
+
+// Admin endpoints
+app.get('/api/admin/stats', (req, res) => {
+  res.json(getAdminStats());
+});
+
+app.get('/api/admin/users', (req, res) => {
+  res.json(getAllUsers());
+});
+
+app.post('/api/admin/packages', (req, res) => {
+  // In a real app, this would add to database
+  res.json({ success: true, message: 'Package created', package: req.body });
+});
+
+app.put('/api/admin/packages/:id', (req, res) => {
+  // In a real app, this would update database
+  res.json({ success: true, message: 'Package updated', id: req.params.id });
+});
+
+app.delete('/api/admin/packages/:id', (req, res) => {
+  // In a real app, this would delete from database
+  res.json({ success: true, message: 'Package deleted', id: req.params.id });
 });
 
 app.listen(PORT, () => {

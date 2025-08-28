@@ -1,0 +1,95 @@
+.revenue-chart {
+  padding: 1rem 0;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 250px;
+  gap: 1rem;
+  padding: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.bar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar-wrapper {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.revenue-bar {
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-dark));
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.revenue-bar:hover {
+  background: linear-gradient(180deg, var(--secondary-color), #059669);
+  transform: scaleY(1.05);
+}
+
+.bar-value {
+  color: var(--white);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.bar-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.month {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bookings {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 20px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-color.revenue {
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+}

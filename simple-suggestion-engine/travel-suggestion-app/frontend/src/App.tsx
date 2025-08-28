@@ -5,6 +5,7 @@ import Packages from './pages/Packages'
 import PackageDetail from './pages/PackageDetail'
 import UserProfile from './pages/UserProfile'
 import Search from './pages/Search'
+import AdminDashboard from './pages/AdminDashboard'
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/packages/:id" element={<PackageDetail />} />
         <Route path="/search" element={<Search />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </div>
   )

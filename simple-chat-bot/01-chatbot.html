@@ -28,9 +28,8 @@
     </div>
 
     <script>
-        // Ganti dengan API key Anda dari DeepSeek
-        const API_KEY = 'sk-d3dc3639f6e44a2ca91cd1e93427583e';
-        const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+        // Using backend API proxy - no API keys in frontend
+        const API_URL = '/api/deepseek';
         
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
@@ -62,8 +61,7 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         model: 'deepseek-chat',
@@ -83,7 +81,7 @@
                 messages.push({role: "assistant", content: aiMsg});
                 
             } catch (error) {
-                addMessage('Error: Tidak dapat terhubung ke AI. Periksa API key Anda.', false);
+                addMessage('Error: Tidak dapat terhubung ke server. Pastikan server berjalan.', false);
                 console.error(error);
             } finally {
                 sendBtn.disabled = false;

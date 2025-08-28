@@ -3,15 +3,14 @@
 <button onclick="go()">Kirim</button>
 <pre id=out></pre>
 <script>
-const API_KEY = "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"; // ganti dengan key asli
+// Using backend API proxy - no API keys in frontend
 const MODEL   = "llama-3.1-8b-instant";
 
 async function go(){
   out.textContent="..."; 
-  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const r = await fetch("/api/groq", {
     method:"POST",
-    headers:{ "Authorization":"Bearer "+API_KEY,
-              "Content-Type":"application/json" },
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({
       model: MODEL,
       messages:[{role:"user", content: ask.value}]
