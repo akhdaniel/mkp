@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8">
+<textarea id=ask rows=4 cols=40 placeholder="Tanya sesuatu..."></textarea>
+<button onclick="go()">Kirim</button>
+<pre id=out></pre>
+<script>
+const API_KEY = "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"; // ganti dengan key asli
+const MODEL   = "llama-3.1-8b-instant";
+
+async function go(){
+  out.textContent="..."; 
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method:"POST",
+    headers:{ "Authorization":"Bearer "+API_KEY,
+              "Content-Type":"application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      messages:[{role:"user", content: ask.value}]
+    })
+  });
+  const j = await r.json();
+  out.textContent = j.choices?.[0]?.message?.content || JSON.stringify(j,null,2);
+}
+</script>

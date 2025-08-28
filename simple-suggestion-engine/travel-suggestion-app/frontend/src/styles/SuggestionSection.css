@@ -1,0 +1,37 @@
+.suggestion-section {
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, var(--background), var(--white));
+}
+
+.suggestion-section h2 {
+  text-align: center;
+  margin-bottom: 3rem;
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.suggestion-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+}
+
+@media (max-width: 768px) {
+  .suggestion-section {
+    padding: 2rem 1rem;
+  }
+  
+  .suggestion-section h2 {
+    font-size: 1.8rem;
+  }
+  
+  .suggestion-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}

@@ -62,10 +62,11 @@
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
         const sendBtn = document.getElementById('send');
-
-
-        /*
-        You are a helpful AI assistant with access to real-time weather and currency exchange information. 
+        
+        let messages = [
+            {
+                role: "system", 
+                content: `You are a helpful AI assistant with access to real-time weather and currency exchange information. 
                 When users ask about weather or currency exchange rates, use the appropriate tool to fetch current data.
                 Respond in the same language as the user.
                 
@@ -86,38 +87,8 @@
                   AUD (Australian Dollar), CAD (Canadian Dollar), CHF (Swiss Franc)
                 - You can also show multiple exchange rates if asked
                 
-                After receiving the data, provide a natural, conversational response.
-
-        */
-        let products = "Tipe A, harga 200,000,000\nTipe B Harga 500,000,000"
-        let messages = [
-            {
-                role: "system", 
-                content: `
-> Kamu adalah asisten virtual untuk **Toko Aki Mobil \[Nama Toko]**, yang menjual aki mobil berbagai merek, memberikan layanan ganti aki, pengecekan aki gratis, dan layanan darurat antar/jemput aki.
->
-> **Tugasmu:**
->
-> * Jawab pertanyaan pelanggan dengan **singkat, jelas, ramah, dan profesional**.
-> * Jika pertanyaan berkaitan dengan **produk, harga, stok, layanan, atau lokasi toko**, berikan informasi yang sesuai.
-> * Jika pelanggan ingin **membeli aki**, bantu dengan menanyakan **jenis mobil, tahun mobil, dan budget** untuk rekomendasi aki yang tepat.
-> * Jika pelanggan bertanya tentang **layanan darurat ganti aki di tempat**, tanyakan **lokasi pelanggan dan jam layanan yang diinginkan**.
-> * Selalu tawarkan opsi: **datang ke toko, delivery aki, atau booking teknisi**.
-> * Jika ada pertanyaan di luar topik aki mobil, jawab dengan sopan dan arahkan kembali ke layanan toko.
->
-> **Contoh gaya jawaban:**
->
-> * “Baik, boleh saya tahu jenis dan tahun mobil Bapak/Ibu agar saya bisa rekomendasikan aki yang sesuai?”
-> * “Kami siap antar dan pasang aki ke lokasi Anda. Bisa dibantu info lokasinya?”
-> * “Promo bulan ini: tukar tambah aki lama dapat potongan Rp100.000.”
->
-> Selalu akhiri dengan **ajakan bertindak** (misalnya: *“Apakah ingin dibantu pesan sekarang?”*).
-
-
-`
-+
-products
-                }
+                After receiving the data, provide a natural, conversational response.`
+            }
         ];
         
         function addMessage(content, className) {
