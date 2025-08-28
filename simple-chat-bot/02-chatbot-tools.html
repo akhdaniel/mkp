@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot with Tools</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui; display: flex; flex-direction: column; height: 100vh; background: #1a1a1a; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 70%; padding: 10px 15px; border-radius: 10px; word-wrap: break-word; }
+        .user { align-self: flex-end; background: #007bff; color: white; }
+        .ai { align-self: flex-start; background: #2d2d2d; color: #e0e0e0; }
+        .tool-call { align-self: flex-start; background: #3a3a3a; color: #ffa500; padding: 8px 12px; border-radius: 8px; font-size: 0.9em; border-left: 3px solid #ffa500; }
+        .weather-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; max-width: 350px; margin: 10px 0; }
+        .weather-header { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+        .weather-temp { font-size: 2em; font-weight: bold; }
+        .weather-details { margin-top: 10px; font-size: 0.9em; }
+        .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .weather-item { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px; }
+        #input-area { display: flex; padding: 15px; background: #2d2d2d; gap: 10px; }
+        #input { flex: 1; padding: 10px; border: none; border-radius: 5px; background: #3d3d3d; color: white; }
+        #send { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #send:hover { background: #0056b3; }
+        #send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .typing { display: inline-block; padding: 8px 12px; background: #3d3d3d; border-radius: 8px; }
+        .typing:after { content: '...'; animation: dots 1.5s steps(4, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+        .error { background: #ff4444; color: white; }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <div id="input-area">
+        <input type="text" id="input" placeholder="Ketik pesan atau tanya tentang cuaca..." autofocus>
+        <button id="send">Kirim</button>
+    </div>
+
+    <script>
+        // API Configuration
+        const DEEPSEEK_API_KEY = 'sk-d3dc3639f6e44a2ca91cd1e93427583e';
+        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+        
+        // OpenWeatherMap API (Free tier)
+        const WEATHER_API_KEY = 'a6b54487d722375e74ecadc169a3257c'; // Ganti dengan API key Anda dari openweathermap.org
+        const WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather';
+        
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send');
+        
+        let messages = [
+            {
+                role: "system", 
+                content: `You are a helpful AI assistant with access to real-time weather information. 
+                When users ask about weather, you should use the get_weather tool to fetch current weather data.
+                Respond in the same language as the user.
+                
+                You have access to the following tools:
+                - get_weather: Gets current weather for a specified city
+                
+                When you need to use a tool, respond with a JSON object in this format:
+                {"tool": "get_weather", "city": "city_name"}
+                
+                After receiving weather data, provide a natural, conversational response about the weather.`
+            }
+        ];
+        
+        function addMessage(content, className) {
+            const div = document.createElement('div');
+            div.className = `msg ${className}`;
+            if (typeof content === 'string') {
+                div.textContent = content;
+            } else {
+                div.appendChild(content);
+            }
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return div;
+        }
+        
+        function showTyping() {
+            const typing = document.createElement('div');
+            typing.className = 'typing';
+            typing.id = 'typing-indicator';
+            chat.appendChild(typing);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        function hideTyping() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+        
+        function createWeatherCard(data) {
+            const card = document.createElement('div');
+            card.className = 'weather-card';
+            
+            const temp = Math.round(data.main.temp);
+            const feelsLike = Math.round(data.main.feels_like);
+            const humidity = data.main.humidity;
+            const windSpeed = Math.round(data.wind.speed * 3.6); // Convert m/s to km/h
+            
+            card.innerHTML = `
+                <div class="weather-header">🌤️ ${data.name}, ${data.sys.country}</div>
+                <div class="weather-temp">${temp}°C</div>
+                <div style="margin-top: 5px;">${data.weather[0].description}</div>
+                <div class="weather-grid">
+                    <div class="weather-item">
+                        <div style="opacity: 0.8;">Terasa</div>
+                        <div style="font-weight: bold;">${feelsLike}°C</div>
+                    </div>
+                    <div class="weather-item">
+                        <div style="opacity: 0.8;">Kelembaban</div>
+                        <div style="font-weight: bold;">${humidity}%</div>
+                    </div>
+                    <div class="weather-item">
+                        <div style="opacity: 0.8;">Angin</div>
+                        <div style="font-weight: bold;">${windSpeed} km/h</div>
+                    </div>
+                    <div class="weather-item">
+                        <div style="opacity: 0.8;">Tekanan</div>
+                        <div style="font-weight: bold;">${data.main.pressure} hPa</div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        async function getWeather(city) {
+            try {
+                // Check if API key is set
+                if (WEATHER_API_KEY === 'YOUR_OPENWEATHER_API_KEY') {
+                    throw new Error('Please set your OpenWeatherMap API key first');
+                }
+                
+                addMessage(`🔧 Mengambil data cuaca untuk ${city}...`, 'tool-call');
+                
+                const response = await fetch(`${WEATHER_API_URL}?q=${encodeURIComponent(city)}&appid=${WEATHER_API_KEY}&units=metric&lang=id`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error(`Kota "${city}" tidak ditemukan`);
+                    }
+                    throw new Error('Failed to fetch weather data');
+                }
+                
+                const data = await response.json();
+                
+                // Display weather card
+                const weatherCard = createWeatherCard(data);
+                addMessage(weatherCard, '');
+                
+                return {
+                    success: true,
+                    data: {
+                        city: data.name,
+                        country: data.sys.country,
+                        temperature: Math.round(data.main.temp),
+                        feels_like: Math.round(data.main.feels_like),
+                        description: data.weather[0].description,
+                        humidity: data.main.humidity,
+                        wind_speed: Math.round(data.wind.speed * 3.6),
+                        pressure: data.main.pressure
+                    }
+                };
+            } catch (error) {
+                console.error('Weather API error:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+        
+        // Alternative: Get weather using a free proxy service (if OpenWeatherMap API key not available)
+        async function getWeatherFallback(city) {
+            try {
+                addMessage(`🔧 Mencari informasi cuaca untuk ${city}...`, 'tool-call');
+                
+                // Using wttr.in as a fallback (free weather service)
+                const response = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch weather data');
+                }
+                
+                const data = await response.json();
+                const current = data.current_condition[0];
+                
+                // Create a simple weather display
+                const weatherInfo = document.createElement('div');
+                weatherInfo.className = 'weather-card';
+                weatherInfo.innerHTML = `
+                    <div class="weather-header">🌤️ ${data.nearest_area[0].areaName[0].value}, ${data.nearest_area[0].country[0].value}</div>
+                    <div class="weather-temp">${current.temp_C}°C</div>
+                    <div style="margin-top: 5px;">${current.weatherDesc[0].value}</div>
+                    <div class="weather-grid">
+                        <div class="weather-item">
+                            <div style="opacity: 0.8;">Terasa</div>
+                            <div style="font-weight: bold;">${current.FeelsLikeC}°C</div>
+                        </div>
+                        <div class="weather-item">
+                            <div style="opacity: 0.8;">Kelembaban</div>
+                            <div style="font-weight: bold;">${current.humidity}%</div>
+                        </div>
+                        <div class="weather-item">
+                            <div style="opacity: 0.8;">Angin</div>
+                            <div style="font-weight: bold;">${current.windspeedKmph} km/h</div>
+                        </div>
+                        <div class="weather-item">
+                            <div style="opacity: 0.8;">Tekanan</div>
+                            <div style="font-weight: bold;">${current.pressure} hPa</div>
+                        </div>
+                    </div>
+                `;
+                
+                addMessage(weatherInfo, '');
+                
+                return {
+                    success: true,
+                    data: {
+                        city: data.nearest_area[0].areaName[0].value,
+                        country: data.nearest_area[0].country[0].value,
+                        temperature: parseInt(current.temp_C),
+                        feels_like: parseInt(current.FeelsLikeC),
+                        description: current.weatherDesc[0].value,
+                        humidity: parseInt(current.humidity),
+                        wind_speed: parseInt(current.windspeedKmph),
+                        pressure: parseInt(current.pressure)
+                    }
+                };
+            } catch (error) {
+                console.error('Weather fallback error:', error);
+                return {
+                    success: false,
+                    error: 'Unable to fetch weather data'
+                };
+            }
+        }
+        
+        async function processToolCall(aiResponse) {
+            try {
+                // Check if response contains tool call JSON
+                // Try to find JSON pattern in the response
+                const jsonMatch = aiResponse.match(/\{[^}]*"tool"[^}]*"get_weather"[^}]*\}/);
+                if (!jsonMatch) {
+                    // Also try without strict pattern matching
+                    try {
+                        const parsed = JSON.parse(aiResponse);
+                        if (parsed.tool === 'get_weather' && parsed.city) {
+                            const weatherResult = await getWeatherFallback(parsed.city);
+                            return weatherResult;
+                        }
+                    } catch {
+                        return null;
+                    }
+                    return null;
+                }
+                
+                const parsed = JSON.parse(jsonMatch[0]);
+                
+                if (parsed.tool === 'get_weather' && parsed.city) {
+                    // Always use Open-Meteo API (free, no CORS issues)
+                    const weatherResult = await getWeatherFallback(parsed.city);
+                    return weatherResult;
+                }
+            } catch (e) {
+                console.error('Tool call parsing error:', e);
+                return null;
+            }
+            return null;
+        }
+        
+        async function sendMessage() {
+            const userMsg = input.value.trim();
+            if (!userMsg) return;
+            
+            addMessage(userMsg, 'user');
+            messages.push({role: "user", content: userMsg});
+            
+            input.value = '';
+            sendBtn.disabled = true;
+            showTyping();
+            
+            try {
+                // First AI response (might be a tool call)
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 1000,
+                        stream: false
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                let aiMsg = data.choices[0].message.content;
+                
+                hideTyping();
+                
+                // Check if AI wants to use a tool (pass full response string)
+                const toolResult = await processToolCall(aiMsg);
+                
+                if (toolResult) {
+                    // AI made a tool call
+                    messages.push({role: "assistant", content: aiMsg});
+                    
+                    // Add tool result to context
+                    const toolResponseMsg = toolResult.success 
+                        ? `Weather data retrieved: ${JSON.stringify(toolResult.data)}`
+                        : `Error getting weather: ${toolResult.error}`;
+                    
+                    messages.push({role: "system", content: toolResponseMsg});
+                    
+                    // Get final AI response with weather data
+                    showTyping();
+                    
+                    const finalResponse = await fetch(DEEPSEEK_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-chat',
+                            messages: messages,
+                            temperature: 0.7,
+                            max_tokens: 1000,
+                            stream: false
+                        })
+                    });
+                    
+                    hideTyping();
+                    
+                    if (finalResponse.ok) {
+                        const finalData = await finalResponse.json();
+                        const finalMsg = finalData.choices[0].message.content;
+                        addMessage(finalMsg, 'ai');
+                        messages.push({role: "assistant", content: finalMsg});
+                    }
+                } else {
+                    // Normal AI response (no tool call)
+                    addMessage(aiMsg, 'ai');
+                    messages.push({role: "assistant", content: aiMsg});
+                }
+                
+            } catch (error) {
+                hideTyping();
+                addMessage('Error: Tidak dapat terhubung ke AI. Periksa koneksi atau API key.', 'ai error');
+                console.error(error);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+        
+        sendBtn.onclick = sendMessage;
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+        
+        // Welcome message
+        addMessage('Halo! Saya AI assistant yang bisa membantu Anda dengan berbagai pertanyaan, termasuk informasi cuaca terkini. Coba tanya: "Bagaimana cuaca di Jakarta?" atau "Cuaca di Tokyo hari ini"', 'ai');
+        
+        // Instructions for API key
+        if (WEATHER_API_KEY === 'YOUR_OPENWEATHER_API_KEY') {
+            addMessage('⚠️ Untuk mendapatkan data cuaca yang akurat, silakan daftar di openweathermap.org untuk mendapatkan API key gratis, lalu ganti YOUR_OPENWEATHER_API_KEY di kode. Saat ini menggunakan layanan cadangan.', 'tool-call');
+        }
+    </script>
+</body>
+</html>
