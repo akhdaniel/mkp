@@ -33,11 +33,11 @@ yarn-error.log*
 .pnp.js
 
 # React build
-build
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+/frontend/build
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
 
 # Environment variables
 .env

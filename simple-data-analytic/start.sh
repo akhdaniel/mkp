@@ -12,8 +12,8 @@ if [ ! -d "venv" ]; then
 fi
 
 source venv/bin/activate
-echo "Installing/updating backend dependencies..."
-pip install -q -r requirements.txt
+#echo "Installing/updating backend dependencies..."
+#pip install -q -r requirements.txt
 
 # Start backend in background
 uvicorn main:app --reload --port 8000 &
