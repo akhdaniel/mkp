@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement } from 'chart.js';
 import { Bar, Line, Pie, Scatter } from 'react-chartjs-2';
 import Plot from 'react-plotly.js';
+import Dashboard from './Dashboard';
 
 // Register ChartJS components
 ChartJS.register(
@@ -17,6 +18,7 @@ ChartJS.register(
 );
 
 function App() {
+  const [currentView, setCurrentView] = useState('upload');
   const [file, setFile] = useState(null);
   const [prompt, setPrompt] = useState('insights');
   const [output, setOutput] = useState('');
@@ -76,12 +78,63 @@ function App() {
     }
   };
 
+  // Render dashboard view
+  if (currentView === 'dashboard') {
+    return (
+      <div>
+        <nav className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-bold text-gray-900">DataInsight AI</h1>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setCurrentView('upload')}
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Data Upload
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('dashboard')}
+                    className="text-gray-900 bg-gray-100 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <Dashboard />
+      </div>
+    );
+  }
+
+  // Default upload view
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800">
       <header className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">DataInsight AI</h1>
-          <p className="text-sm text-gray-600">Upload an Excel file and give a command to analyze.</p>
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">DataInsight AI</h1>
+              <p className="text-sm text-gray-600">Upload an Excel file and give a command to analyze.</p>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCurrentView('upload')}
+                className="text-gray-900 bg-gray-100 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Data Upload
+              </button>
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-md text-sm font-medium transition"
+              >
+                View Dashboard
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
