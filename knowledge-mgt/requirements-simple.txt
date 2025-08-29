@@ -1,0 +1,30 @@
+# Simple requirements for quick setup
+# Install with: pip install -r requirements-simple.txt
+
+# Core 
+streamlit
+anthropic
+python-dotenv
+pydantic
+pydantic-settings
+
+# Document processing
+pypdf2
+python-docx
+python-pptx
+openpyxl
+pandas
+
+# Embeddings and ML
+numpy
+scikit-learn
+tiktoken
+
+# Vector store
+chromadb
+
+# Optional but recommended
+sentence-transformers
+langchain
+langchain-community
+langchain-anthropic
