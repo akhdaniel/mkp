@@ -25,3 +25,14 @@ type DocumentData struct {
 	IssueDate    string `json:"issue_date"`
 	ExpiryDate   string `json:"expiry_date"`
 }
+
+// OCRResponse represents the structure of an OCR service response
+// This is just an example - the actual structure would depend on the OCR service used
+type OCRResponse struct {
+	TextAnnotations []TextAnnotation `json:"textAnnotations"`
+}
+
+// TextAnnotation represents a text annotation from the OCR service
+type TextAnnotation struct {
+	Description string `json:"description"`
+}

@@ -9,17 +9,16 @@ RUN npm run build
 # Build Go backend
 FROM golang:1.21-alpine as backend-build
 WORKDIR /app
-# Install Tesseract OCR development libraries
-RUN apk add --no-cache tesseract-ocr-dev tesseract-ocr
 COPY go.mod ./
+RUN go get github.com/gin-gonic/gin github.com/lib/pq github.com/joho/godotenv github.com/google/uuid
 RUN go mod tidy
 COPY . .
+RUN go get .
 RUN go build -o main .
 
 # Final stage
 FROM alpine:latest
-# Install Tesseract OCR runtime libraries and English language pack
-RUN apk --no-cache add ca-certificates tesseract-ocr tesseract-ocr-data-eng
+RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=backend-build /app/main .
 COPY --from=frontend-build /app/build ./frontend/build
