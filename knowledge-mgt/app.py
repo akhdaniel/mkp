@@ -147,12 +147,92 @@ def display_sidebar():
         with col2:
             st.metric("Chunks", stats["total_chunks"])
         
-        # Clear collection button
-        if st.button("🗑️ Clear All Documents", type="secondary"):
-            if st.checkbox("Confirm deletion"):
-                st.session_state.vector_store.clear_collection()
-                st.success("Collection cleared!")
-                st.rerun()
+        # List documents in collection
+        if stats["total_documents"] > 0:
+            st.subheader("📄 Documents in Collection")
+            try:
+                # Get all unique documents from the collection
+                all_metadata = st.session_state.vector_store.collection.get(include=["metadatas"])
+                
+                if all_metadata and all_metadata.get("metadatas"):
+                    # Extract unique document sources
+                    document_sources = {}
+                    for metadata in all_metadata["metadatas"]:
+                        if metadata and "source" in metadata:
+                            source = metadata["source"]
+                            if source not in document_sources:
+                                document_sources[source] = {
+                                    "chunks": 0,
+                                    "upload_time": metadata.get("upload_time", "Unknown"),
+                                    "document_id": metadata.get("document_id", "Unknown")
+                                }
+                            document_sources[source]["chunks"] += 1
+                    
+                    # Display documents
+                    for source, info in document_sources.items():
+                        # Extract filename from path
+                        filename = Path(source).name
+                        with st.expander(f"📄 {filename}", expanded=False):
+                            st.text(f"Chunks: {info['chunks']}")
+                            st.text(f"Document ID: {info['document_id']}")
+                            if st.button(f"🗑️ Remove", key=f"remove_{filename}"):
+                                # Remove this document
+                                if remove_document_from_collection(source):
+                                    st.success(f"Removed {filename}")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Failed to remove {filename}")
+            except Exception as e:
+                st.error(f"Error listing documents: {str(e)}")
+        
+        # Clear collection button with confirmation
+        if st.button("🗑️ Clear All Documents", type="secondary", use_container_width=True):
+            st.session_state.show_clear_confirm = True
+        
+        # Show confirmation dialog
+        if st.session_state.get('show_clear_confirm', False):
+            st.warning("⚠️ This will permanently delete all documents from the vector database!")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Yes, Clear All", type="primary", use_container_width=True):
+                    try:
+                        # Clear the vector store collection
+                        success = st.session_state.vector_store.clear_collection()
+                        
+                        if success:
+                            # Clear uploaded files from disk
+                            upload_dir = Path(settings.upload_path)
+                            if upload_dir.exists():
+                                for file in upload_dir.glob("*"):
+                                    try:
+                                        file.unlink()
+                                        print(f"Deleted file: {file}")
+                                    except Exception as e:
+                                        print(f"Could not delete {file}: {e}")
+                            
+                            # Clear session state
+                            st.session_state.show_clear_confirm = False
+                            if 'uploaded_files' in st.session_state:
+                                st.session_state.uploaded_files = []
+                            if 'uploaded_documents' in st.session_state:
+                                st.session_state.uploaded_documents = []
+                            if 'messages' in st.session_state:
+                                st.session_state.messages = []
+                            
+                            st.success("✅ All documents and chat history cleared successfully!")
+                            st.balloons()
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Failed to clear documents. Please try again.")
+                            st.session_state.show_clear_confirm = False
+                    except Exception as e:
+                        st.error(f"Error clearing documents: {str(e)}")
+                        st.session_state.show_clear_confirm = False
+            with col2:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_clear_confirm = False
+                    st.rerun()
         
         st.divider()
         
@@ -217,6 +297,34 @@ def display_sidebar():
                 export_chat_history()
 
 
+def remove_document_from_collection(source_path):
+    """Remove a specific document from the collection by source path."""
+    try:
+        # Get all documents with this source
+        all_data = st.session_state.vector_store.collection.get(
+            where={"source": source_path},
+            include=["ids"]
+        )
+        
+        if all_data and all_data.get("ids"):
+            # Delete all chunks for this document
+            st.session_state.vector_store.collection.delete(ids=all_data["ids"])
+            
+            # Try to delete the physical file
+            try:
+                file_path = Path(source_path)
+                if file_path.exists():
+                    file_path.unlink()
+            except Exception as e:
+                print(f"Could not delete physical file: {e}")
+            
+            return True
+        return False
+    except Exception as e:
+        print(f"Error removing document: {e}")
+        return False
+
+
 def process_uploaded_files(uploaded_files):
     """Process uploaded files and add to vector store."""
     progress_bar = st.progress(0)
@@ -254,7 +362,9 @@ def process_uploaded_files(uploaded_files):
                 file_path,
                 metadata={
                     "upload_user": "admin",
-                    "department": "general"
+                    "department": "general",
+                    "source": str(file_path),  # Ensure source is set
+                    "upload_time": datetime.now().isoformat()
                 }
             )
             
@@ -263,10 +373,19 @@ def process_uploaded_files(uploaded_files):
             
             if result["success"]:
                 successful += 1
-                st.success(f"✅ {uploaded_file.name} processed successfully")
+                st.success(f"✅ {uploaded_file.name} processed successfully ({document['num_chunks']} chunks)")
+                # Track uploaded files in session state
+                if 'uploaded_documents' not in st.session_state:
+                    st.session_state.uploaded_documents = []
+                st.session_state.uploaded_documents.append({
+                    "filename": uploaded_file.name,
+                    "path": str(file_path),
+                    "chunks": document['num_chunks'],
+                    "document_id": document['id']
+                })
             else:
                 failed += 1
-                st.error(f"❌ {uploaded_file.name} failed to index")
+                st.error(f"❌ {uploaded_file.name} failed to index: {result['failed_chunks']} chunks failed")
         
         except Exception as e:
             failed += 1

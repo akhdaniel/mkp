@@ -71,11 +71,20 @@ class VectorStore:
             for chunk in chunks:
                 chunk_id = f"{doc_id}_{chunk['metadata']['chunk_index']}"
                 texts.append(chunk["content"])
-                metadatas.append({
+                
+                # Combine chunk metadata with document metadata
+                chunk_metadata = {
                     **chunk["metadata"],
                     "document_title": document["title"],
-                    "document_id": doc_id
-                })
+                    "document_id": doc_id,
+                    "source": document["metadata"].get("source", document["metadata"].get("filename", "unknown"))
+                }
+                
+                # Ensure source is present
+                if "source" not in chunk_metadata and "filename" in document["metadata"]:
+                    chunk_metadata["source"] = document["metadata"]["filename"]
+                    
+                metadatas.append(chunk_metadata)
                 ids.append(chunk_id)
             
             if texts:
@@ -363,32 +372,82 @@ class VectorStore:
         Returns:
             Collection statistics
         """
-        # Get all unique document IDs
-        all_metadata = self.collection.get(include=["metadatas"])
-        
-        if not all_metadata["metadatas"]:
+        try:
+            # Ensure we have a valid collection
+            if not self.collection:
+                self.collection = self._get_or_create_collection()
+            
+            # Get all metadata from the collection
+            all_metadata = self.collection.get(include=["metadatas"])
+            
+            # Check if collection is empty
+            if not all_metadata or not all_metadata.get("metadatas"):
+                return {
+                    "total_chunks": 0,
+                    "total_documents": 0,
+                    "collection_name": self.collection_name,
+                    "embedding_dimension": self.embedding_manager.get_dimension()
+                }
+            
+            # Count unique documents
+            document_ids = set()
+            document_sources = set()
+            for metadata in all_metadata["metadatas"]:
+                if metadata:
+                    if "document_id" in metadata:
+                        document_ids.add(metadata["document_id"])
+                    if "source" in metadata:
+                        document_sources.add(metadata["source"])
+            
+            # Use document_ids if available, otherwise use sources
+            unique_docs = len(document_ids) if document_ids else len(document_sources)
+            
+            return {
+                "total_chunks": self.collection.count(),
+                "total_documents": unique_docs,
+                "collection_name": self.collection_name,
+                "embedding_dimension": self.embedding_manager.get_dimension()
+            }
+        except Exception as e:
+            print(f"Error getting collection stats: {e}")
             return {
                 "total_chunks": 0,
                 "total_documents": 0,
-                "collection_name": self.collection_name
+                "collection_name": self.collection_name,
+                "embedding_dimension": self.embedding_manager.get_dimension()
             }
-        
-        document_ids = set()
-        for metadata in all_metadata["metadatas"]:
-            if "document_id" in metadata:
-                document_ids.add(metadata["document_id"])
-        
-        return {
-            "total_chunks": self.collection.count(),
-            "total_documents": len(document_ids),
-            "collection_name": self.collection_name,
-            "embedding_dimension": self.embedding_manager.get_dimension()
-        }
     
     def clear_collection(self):
         """Clear all documents from the collection."""
         try:
+            # Delete the existing collection
             self.client.delete_collection(name=self.collection_name)
+            print(f"Deleted collection: {self.collection_name}")
+            
+            # Recreate an empty collection
             self.collection = self._get_or_create_collection()
+            print(f"Recreated empty collection: {self.collection_name}")
+            
+            # Reset document count
+            self.document_count = 0
+            
+            # Clear any cached data
+            if hasattr(self, '_cache'):
+                self._cache = {}
+                
+            return True
         except Exception as e:
             print(f"Error clearing collection: {e}")
+            # Try alternative approach - delete all documents
+            try:
+                if self.collection:
+                    # Get all document IDs and delete them
+                    results = self.collection.get()
+                    if results and 'ids' in results and results['ids']:
+                        self.collection.delete(ids=results['ids'])
+                        print(f"Deleted {len(results['ids'])} documents from collection")
+                        self.document_count = 0
+                        return True
+            except Exception as e2:
+                print(f"Alternative deletion also failed: {e2}")
+            return False
