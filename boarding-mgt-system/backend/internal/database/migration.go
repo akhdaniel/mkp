@@ -49,6 +49,20 @@ func (m *Migrator) Version() (uint, bool, error) {
 	return m.migrate.Version()
 }
 
+func (m *Migrator) Steps(n int) error {
+	if err := m.migrate.Steps(n); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run %d steps: %w", n, err)
+	}
+	return nil
+}
+
+func (m *Migrator) Force(version int) error {
+	if err := m.migrate.Force(version); err != nil {
+		return fmt.Errorf("failed to force version %d: %w", version, err)
+	}
+	return nil
+}
+
 func (m *Migrator) Close() error {
 	sourceErr, dbErr := m.migrate.Close()
 	if sourceErr != nil {

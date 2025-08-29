@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.DS_Store
+*.log
+.git
+.gitignore
+README.md
+.vscode
+.idea
+coverage
+.nyc_output
+Dockerfile
+docker-compose*.yml
