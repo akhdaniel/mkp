@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server cmd/server/main.go
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates bash
+RUN apk --no-cache add ca-certificates bash netcat-openbsd
 
 WORKDIR /app
 
